@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calculadora de Drogas</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Ocultar barra de desplazamiento pero permitir scroll */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            background-color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Íconos SVG integrados para evitar dependencias externas en el móvil
+        const IconHeart = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#e3000f]">
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
+            </svg>
+        );
+
+        const App = () => {
+            const [globalWeight, setGlobalWeight] = useState(70);
+            const [activeCategory, setActiveCategory] = useState("drogas");
+
+            // --- Estados de las fórmulas ---
+            // Drogas
+            const [propofol, setPropofol] = useState({ ml: "" });
+            const [remifentanilo, setRemifentanilo] = useState({ ml: "", mg: "" });
+            const [dobutamina, setDobutamina] = useState({ ml: "", mg: "" });
+            const [norepinefrina, setNorepinefrina] = useState({ ml: "", mg: "" });
+            const [dopamina, setDopamina] = useState({ ml: "" });
+            const [vasopresina, setVasopresina] = useState({});
+            const [dexmedetomidina, setDexmedetomidina] = useState({ t: 24 });
+            const [midazolam, setMidazolam] = useState({ dosis: "0.15" });
+            const [heparina, setHeparina] = useState({});
+            const [fentanilo, setFentanilo] = useState({ t: "" });
+            const [gammas, setGammas] = useState({ mg: "", ml: "", dilucion: "" });
+
+            // Ácido-Base
+            const [acidosisMet, setAcidosisMet] = useState({ hco3: "" });
+            const [alcalosisMet, setAlcalosisMet] = useState({ hco3: "" });
+            const [acRespiratoriaAg, setAcRespiratoriaAg] = useState({ pco2: "" });
+            const [acRespiratoriaCro, setAcRespiratoriaCro] = useState({ pco2: "" });
+            const [alcRespiratoriaAg, setAlcRespiratoriaAg] = useState({ pco2: "" });
+            const [alcRespiratoriaCro, setAlcRespiratoriaCro] = useState({ pco2: "" });
+
+            // Ventilación
+            const [frRequerida, setFrRequerida] = useState({ frActual: "", pco2Tengo: "", pco2Quiero: "" });
+            const [volRequerido, setVolRequerido] = useState({ pco2Medido: "", vtActual: "", pco2Esperado: "" });
+
+            // Otros
+            const [calcio, setCalcio] = useState({ calcioMedido: "", albumina: "" });
+            const [deficitAgua, setDeficitAgua] = useState({ sodioReal: "", sodioCalculado: "140" });
+            const [balanceN, setBalanceN] = useState({ nIngerido: "", nExcretado: "" });
+            const [nExcretado, setNExcretado] = useState({ urea: "" });
+            const [beriplex, setBeriplex] = useState({ tpDeseado: "", tpPte: "" });
+
+            // --- Cálculos ---
+            const calculate = (type) => {
+                const w = parseFloat(globalWeight) || 0;
+                switch (type) {
+                    case 'propofol':
+                        if (!propofol.ml || w === 0) return "-";
+                        return ((parseFloat(propofol.ml) * 10) / w).toFixed(2) + " mg/kg/h";
+                    case 'remifentanilo':
+                        if (!remifentanilo.ml || !remifentanilo.mg || w === 0) return "-";
+                        return ((parseFloat(remifentanilo.ml) * parseFloat(remifentanilo.mg) * 1000) / 110 / 60 / w).toFixed(4) + " gamma";
+                    case 'dobutamina':
+                        if (!dobutamina.ml || !dobutamina.mg || w === 0) return "-";
+                        return ((parseFloat(dobutamina.ml) * parseFloat(dobutamina.mg) * 1000) / 250 / 60 / w).toFixed(2) + " gamma";
+                    case 'norepinefrina':
+                        if (!norepinefrina.ml || !norepinefrina.mg || w === 0) return "-";
+                        return ((parseFloat(norepinefrina.ml) * parseFloat(norepinefrina.mg) * 1000) / 250 / 60 / w).toFixed(4) + " gamma";
+                    case 'dopamina':
+                        if (!dopamina.ml || w === 0) return "-";
+                        return ((200 * parseFloat(dopamina.ml) * 1000) / 250 / w / 60).toFixed(2) + " gamma";
+                    case 'vasopresina':
+                        if (w === 0) return "-";
+                        return ((0.06 * w * 24) / 20).toFixed(2) + " ml/hora";
+                    case 'dexmedetomidina':
+                        if (w === 0) return "-";
+                        const t = parseFloat(dexmedetomidina.t) || 24;
+                        return ((0.7 * t * w) / 200).toFixed(2) + " ampollas";
+                    case 'midazolam':
+                        if (w === 0) return "-";
+                        const dosis = parseFloat(midazolam.dosis) || 0;
+                        return ((dosis * w * 24) / 21).toFixed(2) + " ampollas";
+                    case 'heparina':
+                        if (w === 0) return "-";
+                        return ((21 * 11 * 24 * w) / 25000).toFixed(2);
+                    case 'fentanilo':
+                        if (!fentanilo.t) return "-";
+                        return ((2 * parseFloat(fentanilo.t) * 100) / 250).toFixed(2);
+                    case 'gammas':
+                        if (!gammas.mg || !gammas.ml || !gammas.dilucion || w === 0) return "-";
+                        return ((parseFloat(gammas.mg) * parseFloat(gammas.ml) * 1000) / parseFloat(gammas.dilucion) / 60 / w).toFixed(2) + " gamma";
+                    case 'acidosisMet':
+                        if (!acidosisMet.hco3) return "-";
+                        const resAM = 1.5 * parseFloat(acidosisMet.hco3) + 8;
+                        return `${resAM.toFixed(1)} (±2)`;
+                    case 'alcalosisMet':
+                        if (!alcalosisMet.hco3) return "-";
+                        const resAlM = 0.7 * parseFloat(alcalosisMet.hco3) + 20;
+                        return `${resAlM.toFixed(1)} (±2)`;
+                    case 'acRespiratoriaAg':
+                        if (!acRespiratoriaAg.pco2) return "-";
+                        return ((24 + (parseFloat(acRespiratoriaAg.pco2) - 40)) / 10).toFixed(2);
+                    case 'acRespiratoriaCro':
+                        if (!acRespiratoriaCro.pco2) return "-";
+                        return ((24 + (parseFloat(acRespiratoriaCro.pco2) - 40) * 4) / 10).toFixed(2);
+                    case 'alcRespiratoriaAg':
+                        if (!alcRespiratoriaAg.pco2) return "-";
+                        return (24 - ((40 - parseFloat(alcRespiratoriaAg.pco2)) / 10) * 2).toFixed(2);
+                    case 'alcRespiratoriaCro':
+                        if (!alcRespiratoriaCro.pco2) return "-";
+                        return (24 - ((40 - parseFloat(alcRespiratoriaCro.pco2)) / 10) * 5).toFixed(2);
+                    case 'frRequerida':
+                        if (!frRequerida.frActual || !frRequerida.pco2Tengo || !frRequerida.pco2Quiero) return "-";
+                        return ((parseFloat(frRequerida.frActual) * parseFloat(frRequerida.pco2Tengo)) / parseFloat(frRequerida.pco2Quiero)).toFixed(1);
+                    case 'volRequerido':
+                        if (!volRequerido.pco2Medido || !volRequerido.vtActual || !volRequerido.pco2Esperado) return "-";
+                        return ((parseFloat(volRequerido.pco2Medido) * parseFloat(volRequerido.vtActual)) / parseFloat(volRequerido.pco2Esperado)).toFixed(1);
+                    case 'calcio':
+                        if (!calcio.calcioMedido || !calcio.albumina) return "-";
+                        return (parseFloat(calcio.calcioMedido) - (0.8 * (4 - parseFloat(calcio.albumina)))).toFixed(2) + " mg/dl";
+                    case 'deficitAgua':
+                        if (!deficitAgua.sodioReal || !deficitAgua.sodioCalculado || w === 0) return "-";
+                        return (0.6 * w * ((parseFloat(deficitAgua.sodioReal) / parseFloat(deficitAgua.sodioCalculado)) - 1)).toFixed(2) + " L";
+                    case 'balanceN':
+                        if (!balanceN.nIngerido || !balanceN.nExcretado) return "-";
+                        return ((parseFloat(balanceN.nIngerido) / 6.25) - parseFloat(balanceN.nExcretado)).toFixed(2);
+                    case 'nExcretado':
+                        if (!nExcretado.urea) return "-";
+                        return ((parseFloat(nExcretado.urea) * 0.46) + 2).toFixed(2);
+                    case 'beriplex':
+                        if (!beriplex.tpDeseado || !beriplex.tpPte || w === 0) return "-";
+                        return (((parseFloat(beriplex.tpDeseado) - parseFloat(beriplex.tpPte)) * w) / 100).toFixed(2) + " Sachets"; // usando 100 como promedio entre 70-120
+                    default:
+                        return "-";
+                }
+            };
+
+            const Input = ({ label, value, onChange, placeholder, type = "number" }) => (
+                <div className="flex flex-col mb-2">
+                    <label className="text-xs font-semibold text-[#002f6c] mb-1">{label}</label>
+                    <input
+                        type={type}
+                        value={value}
+                        onChange={onChange}
+                        placeholder={placeholder}
+                        className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e3000f] text-sm bg-white"
+                        inputMode="decimal"
+                    />
+                </div>
+            );
+
+            const Card = ({ title, result, children }) => (
+                <div className="bg-white rounded-xl shadow-md p-4 mb-4 border-l-4 border-[#002f6c]">
+                    <h3 className="font-bold text-[#002f6c] mb-3 border-b border-gray-100 pb-2">{title}</h3>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                        {children}
+                    </div>
+                    <div className="bg-blue-50 p-3 rounded-lg flex justify-between items-center mt-2">
+                        <span className="text-sm font-semibold text-gray-600">Resultado:</span>
+                        <span className="text-lg font-bold text-[#e3000f]">{result}</span>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-gray-50 flex flex-col">
+                    {/* Header Pinned */}
+                    <div className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
+                        <div className="p-4 flex items-center gap-3">
+                            <IconHeart />
+                            <h1 className="text-xl font-black text-[#002f6c] uppercase tracking-wide">
+                                Calculadora de Drogas
+                            </h1>
+                        </div>
+                        
+                        <div className="px-4 pb-3 flex items-center justify-between">
+                            <label className="font-semibold text-gray-700 text-sm">Peso Global (kg):</label>
+                            <input
+                                type="number"
+                                value={globalWeight}
+                                onChange={(e) => setGlobalWeight(e.target.value)}
+                                className="w-24 p-2 text-center border border-gray-300 rounded-lg font-bold text-[#e3000f] focus:ring-2 focus:ring-[#002f6c] outline-none"
+                                inputMode="decimal"
+                            />
+                        </div>
+
+                        {/* Navigation Tabs */}
+                        <div className="flex overflow-x-auto hide-scrollbar border-t border-gray-100 bg-gray-50">
+                            {[
+                                { id: 'drogas', label: 'Drogas e Infusiones' },
+                                { id: 'acidobase', label: 'Ácido-Base' },
+                                { id: 'ventilacion', label: 'Ventilación Mecánica' },
+                                { id: 'otros', label: 'Medio Interno & Otros' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveCategory(tab.id)}
+                                    className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                                        activeCategory === tab.id 
+                                        ? 'border-[#e3000f] text-[#e3000f] bg-white' 
+                                        : 'border-transparent text-gray-500 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Content Area */}
+                    <div className="p-4 flex-1 pb-20">
+                        
+                        {/* CATEGORY: DROGAS */}
+                        {activeCategory === 'drogas' && (
+                            <div className="animate-fade-in">
+                                <Card title="Propofol" result={calculate('propofol')}>
+                                    <Input label="Volumen (ml)" value={propofol.ml} onChange={e => setPropofol({ ...propofol, ml: e.target.value })} />
+                                </Card>
+
+                                <Card title="Remifentanilo (Vel. infusión)" result={calculate('remifentanilo')}>
+                                    <Input label="Volumen (ml)" value={remifentanilo.ml} onChange={e => setRemifentanilo({ ...remifentanilo, ml: e.target.value })} />
+                                    <Input label="Dosis (mg)" value={remifentanilo.mg} onChange={e => setRemifentanilo({ ...remifentanilo, mg: e.target.value })} />
+                                </Card>
+
+                                <Card title="Dobutamina" result={calculate('dobutamina')}>
+                                    <Input label="Volumen (ml)" value={dobutamina.ml} onChange={e => setDobutamina({ ...dobutamina, ml: e.target.value })} />
+                                    <Input label="Dosis (mg)" value={dobutamina.mg} onChange={e => setDobutamina({ ...dobutamina, mg: e.target.value })} />
+                                </Card>
+
+                                <Card title="Norepinefrina" result={calculate('norepinefrina')}>
+                                    <Input label="Volumen (ml)" value={norepinefrina.ml} onChange={e => setNorepinefrina({ ...norepinefrina, ml: e.target.value })} />
+                                    <Input label="Dosis (mg)" value={norepinefrina.mg} onChange={e => setNorepinefrina({ ...norepinefrina, mg: e.target.value })} />
+                                </Card>
+
+                                <Card title="Dopamina (DOPA)" result={calculate('dopamina')}>
+                                    <Input label="Volumen (ml)" value={dopamina.ml} onChange={e => setDopamina({ ...dopamina, ml: e.target.value })} />
+                                </Card>
+
+                                <Card title="Vasopresina" result={calculate('vasopresina')}>
+                                    <div className="col-span-2 text-xs text-gray-500 italic flex items-center h-full">Usa el Peso Global automáticamente.</div>
+                                </Card>
+
+                                <Card title="Dexmedetomidina" result={calculate('dexmedetomidina')}>
+                                    <Input label="Tiempo (horas)" value={dexmedetomidina.t} onChange={e => setDexmedetomidina({ ...dexmedetomidina, t: e.target.value })} placeholder="Ej: 24" />
+                                </Card>
+
+                                <Card title="Midazolam" result={calculate('midazolam')}>
+                                    <Input label="Dosis (mg/kg/h)" value={midazolam.dosis} onChange={e => setMidazolam({ ...midazolam, dosis: e.target.value })} placeholder="Ej: 0.15" />
+                                </Card>
+
+                                <Card title="Heparina" result={calculate('heparina')}>
+                                    <div className="col-span-2 text-xs text-gray-500 italic flex items-center h-full">Usa el Peso Global automáticamente.</div>
+                                </Card>
+
+                                <Card title="Fentanilo" result={calculate('fentanilo')}>
+                                    <Input label="Tiempo (horas)" value={fentanilo.t} onChange={e => setFentanilo({ ...fentanilo, t: e.target.value })} />
+                                </Card>
+
+                                <Card title="Cálculo de gammas" result={calculate('gammas')}>
+                                    <Input label="Mg" value={gammas.mg} onChange={e => setGammas({ ...gammas, mg: e.target.value })} />
+                                    <Input label="Volumen (ml)" value={gammas.ml} onChange={e => setGammas({ ...gammas, ml: e.target.value })} />
+                                    <Input label="Dilución" value={gammas.dilucion} onChange={e => setGammas({ ...gammas, dilucion: e.target.value })} />
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* CATEGORY: ÁCIDO-BASE */}
+                        {activeCategory === 'acidobase' && (
+                            <div className="animate-fade-in">
+                                <Card title="Acidosis Metabólica" result={calculate('acidosisMet')}>
+                                    <Input label="HCO3 medido" value={acidosisMet.hco3} onChange={e => setAcidosisMet({ ...acidosisMet, hco3: e.target.value })} />
+                                </Card>
+                                <Card title="Alcalosis Metabólica" result={calculate('alcalosisMet')}>
+                                    <Input label="HCO3 medido" value={alcalosisMet.hco3} onChange={e => setAlcalosisMet({ ...alcalosisMet, hco3: e.target.value })} />
+                                </Card>
+                                <Card title="Acidosis Respiratoria Aguda" result={calculate('acRespiratoriaAg')}>
+                                    <Input label="pCO2 medido" value={acRespiratoriaAg.pco2} onChange={e => setAcRespiratoriaAg({ ...acRespiratoriaAg, pco2: e.target.value })} />
+                                </Card>
+                                <Card title="Acidosis Respiratoria Crónica" result={calculate('acRespiratoriaCro')}>
+                                    <Input label="pCO2 medido" value={acRespiratoriaCro.pco2} onChange={e => setAcRespiratoriaCro({ ...acRespiratoriaCro, pco2: e.target.value })} />
+                                </Card>
+                                <Card title="Alcalosis Respiratoria Aguda" result={calculate('alcRespiratoriaAg')}>
+                                    <Input label="pCO2 medido" value={alcRespiratoriaAg.pco2} onChange={e => setAlcRespiratoriaAg({ ...alcRespiratoriaAg, pco2: e.target.value })} />
+                                </Card>
+                                <Card title="Alcalosis Respiratoria Crónica" result={calculate('alcRespiratoriaCro')}>
+                                    <Input label="pCO2 medido" value={alcRespiratoriaCro.pco2} onChange={e => setAlcRespiratoriaCro({ ...alcRespiratoriaCro, pco2: e.target.value })} />
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* CATEGORY: VENTILACIÓN MECÁNICA */}
+                        {activeCategory === 'ventilacion' && (
+                            <div className="animate-fade-in">
+                                <Card title="Frecuencia Respiratoria Requerida" result={calculate('frRequerida')}>
+                                    <Input label="FR Actual" value={frRequerida.frActual} onChange={e => setFrRequerida({ ...frRequerida, frActual: e.target.value })} />
+                                    <Input label="pCO2 que tengo" value={frRequerida.pco2Tengo} onChange={e => setFrRequerida({ ...frRequerida, pco2Tengo: e.target.value })} />
+                                    <Input label="pCO2 que quiero" value={frRequerida.pco2Quiero} onChange={e => setFrRequerida({ ...frRequerida, pco2Quiero: e.target.value })} />
+                                </Card>
+                                <Card title="Volumen Requerido" result={calculate('volRequerido')}>
+                                    <Input label="pCO2 Medido" value={volRequerido.pco2Medido} onChange={e => setVolRequerido({ ...volRequerido, pco2Medido: e.target.value })} />
+                                    <Input label="Vt Actual" value={volRequerido.vtActual} onChange={e => setVolRequerido({ ...volRequerido, vtActual: e.target.value })} />
+                                    <Input label="pCO2 Esperado" value={volRequerido.pco2Esperado} onChange={e => setVolRequerido({ ...volRequerido, pco2Esperado: e.target.value })} />
+                                </Card>
+                            </div>
+                        )}
+
+                        {/* CATEGORY: OTROS */}
+                        {activeCategory === 'otros' && (
+                            <div className="animate-fade-in">
+                                <Card title="Calcio corregido con albúmina" result={calculate('calcio')}>
+                                    <Input label="Calcio medido (mg/dl)" value={calcio.calcioMedido} onChange={e => setCalcio({ ...calcio, calcioMedido: e.target.value })} />
+                                    <Input label="Albúmina" value={calcio.albumina} onChange={e => setCalcio({ ...calcio, albumina: e.target.value })} />
+                                </Card>
+                                <Card title="Déficit de Agua" result={calculate('deficitAgua')}>
+                                    <Input label="Na Real" value={deficitAgua.sodioReal} onChange={e => setDeficitAgua({ ...deficitAgua, sodioReal: e.target.value })} />
+                                    <Input label="Na Calculado" value={deficitAgua.sodioCalculado} onChange={e => setDeficitAgua({ ...deficitAgua, sodioCalculado: e.target.value })} placeholder="140" />
+                                </Card>
+                                <Card title="Balance Nitrogenado" result={calculate('balanceN')}>
+                                    <Input label="N Ingerido (g/día)" value={balanceN.nIngerido} onChange={e => setBalanceN({ ...balanceN, nIngerido: e.target.value })} />
+                                    <Input label="N Excretado" value={balanceN.nExcretado} onChange={e => setBalanceN({ ...balanceN, nExcretado: e.target.value })} />
+                                </Card>
+                                <Card title="Nitrógeno excretado" result={calculate('nExcretado')}>
+                                    <Input label="Urea (g/l)" value={nExcretado.urea} onChange={e => setNExcretado({ ...nExcretado, urea: e.target.value })} />
+                                </Card>
+                                <Card title="Cálculo de Beriplex" result={calculate('beriplex')}>
+                                    <Input label="TP Deseado" value={beriplex.tpDeseado} onChange={e => setBeriplex({ ...beriplex, tpDeseado: e.target.value })} />
+                                    <Input label="TP del Paciente" value={beriplex.tpPte} onChange={e => setBeriplex({ ...beriplex, tpPte: e.target.value })} />
+                                </Card>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
