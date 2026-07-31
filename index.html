@@ -42,6 +42,36 @@
             </svg>
         );
 
+        // EXTRAÍDO FUERA DE App: El componente Input ahora es independiente
+        // Esto evita que React lo destruya y vuelva a crear, manteniendo el teclado abierto
+        const Input = ({ label, value, onChange, placeholder, type = "number" }) => (
+            <div className="flex flex-col mb-2">
+                <label className="text-xs font-semibold text-[#002f6c] mb-1">{label}</label>
+                <input
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e3000f] text-sm bg-white"
+                    inputMode="decimal"
+                />
+            </div>
+        );
+
+        // EXTRAÍDO FUERA DE App: El componente Card
+        const Card = ({ title, result, children }) => (
+            <div className="bg-white rounded-xl shadow-md p-4 mb-4 border-l-4 border-[#002f6c]">
+                <h3 className="font-bold text-[#002f6c] mb-3 border-b border-gray-100 pb-2">{title}</h3>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                    {children}
+                </div>
+                <div className="bg-blue-50 p-3 rounded-lg flex justify-between items-center mt-2">
+                    <span className="text-sm font-semibold text-gray-600">Resultado:</span>
+                    <span className="text-lg font-bold text-[#e3000f]">{result}</span>
+                </div>
+            </div>
+        );
+
         const App = () => {
             const [globalWeight, setGlobalWeight] = useState(70);
             const [activeCategory, setActiveCategory] = useState("drogas");
@@ -118,6 +148,7 @@
                     case 'gammas':
                         if (!gammas.mg || !gammas.ml || !gammas.dilucion || w === 0) return "-";
                         return ((parseFloat(gammas.mg) * parseFloat(gammas.ml) * 1000) / parseFloat(gammas.dilucion) / 60 / w).toFixed(2) + " gamma";
+                    
                     case 'acidosisMet':
                         if (!acidosisMet.hco3) return "-";
                         const resAM = 1.5 * parseFloat(acidosisMet.hco3) + 8;
@@ -138,6 +169,7 @@
                     case 'alcRespiratoriaCro':
                         if (!alcRespiratoriaCro.pco2) return "-";
                         return (24 - ((40 - parseFloat(alcRespiratoriaCro.pco2)) / 10) * 5).toFixed(2);
+                    
                     case 'frRequerida':
                         if (!frRequerida.frActual || !frRequerida.pco2Tengo || !frRequerida.pco2Quiero) return "-";
                         return ((parseFloat(frRequerida.frActual) * parseFloat(frRequerida.pco2Tengo)) / parseFloat(frRequerida.pco2Quiero)).toFixed(1);
@@ -163,33 +195,6 @@
                         return "-";
                 }
             };
-
-            const Input = ({ label, value, onChange, placeholder, type = "number" }) => (
-                <div className="flex flex-col mb-2">
-                    <label className="text-xs font-semibold text-[#002f6c] mb-1">{label}</label>
-                    <input
-                        type={type}
-                        value={value}
-                        onChange={onChange}
-                        placeholder={placeholder}
-                        className="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e3000f] text-sm bg-white"
-                        inputMode="decimal"
-                    />
-                </div>
-            );
-
-            const Card = ({ title, result, children }) => (
-                <div className="bg-white rounded-xl shadow-md p-4 mb-4 border-l-4 border-[#002f6c]">
-                    <h3 className="font-bold text-[#002f6c] mb-3 border-b border-gray-100 pb-2">{title}</h3>
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                        {children}
-                    </div>
-                    <div className="bg-blue-50 p-3 rounded-lg flex justify-between items-center mt-2">
-                        <span className="text-sm font-semibold text-gray-600">Resultado:</span>
-                        <span className="text-lg font-bold text-[#e3000f]">{result}</span>
-                    </div>
-                </div>
-            );
 
             return (
                 <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -239,7 +244,7 @@
                     {/* Content Area */}
                     <div className="p-4 flex-1 pb-20">
                         
-                        {/* CATEGORY: DROGAS */}
+                        {}
                         {activeCategory === 'drogas' && (
                             <div className="animate-fade-in">
                                 <Card title="Propofol" result={calculate('propofol')}>
@@ -293,7 +298,7 @@
                             </div>
                         )}
 
-                        {/* CATEGORY: ÁCIDO-BASE */}
+                        {}
                         {activeCategory === 'acidobase' && (
                             <div className="animate-fade-in">
                                 <Card title="Acidosis Metabólica" result={calculate('acidosisMet')}>
@@ -317,7 +322,7 @@
                             </div>
                         )}
 
-                        {/* CATEGORY: VENTILACIÓN MECÁNICA */}
+                        {}
                         {activeCategory === 'ventilacion' && (
                             <div className="animate-fade-in">
                                 <Card title="Frecuencia Respiratoria Requerida" result={calculate('frRequerida')}>
@@ -333,7 +338,7 @@
                             </div>
                         )}
 
-                        {/* CATEGORY: OTROS */}
+                        {}
                         {activeCategory === 'otros' && (
                             <div className="animate-fade-in">
                                 <Card title="Calcio corregido con albúmina" result={calculate('calcio')}>
