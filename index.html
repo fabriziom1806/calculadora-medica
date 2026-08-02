@@ -34,7 +34,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // Íconos SVG integrados para evitar dependencias externas en el móvil
+        // Íconos SVG integrados
         const IconHeart = () => (
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#e3000f]">
                 <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
@@ -42,8 +42,7 @@
             </svg>
         );
 
-        // EXTRAÍDO FUERA DE App: El componente Input ahora es independiente
-        // Esto evita que React lo destruya y vuelva a crear, manteniendo el teclado abierto
+        // Componentes extraídos fuera de App para evitar que el teclado se cierre
         const Input = ({ label, value, onChange, placeholder, type = "number" }) => (
             <div className="flex flex-col mb-2">
                 <label className="text-xs font-semibold text-[#002f6c] mb-1">{label}</label>
@@ -58,10 +57,12 @@
             </div>
         );
 
-        // EXTRAÍDO FUERA DE App: El componente Card
-        const Card = ({ title, result, children }) => (
+        const Card = ({ title, formula, result, children }) => (
             <div className="bg-white rounded-xl shadow-md p-4 mb-4 border-l-4 border-[#002f6c]">
-                <h3 className="font-bold text-[#002f6c] mb-3 border-b border-gray-100 pb-2">{title}</h3>
+                <div className="mb-3 border-b border-gray-100 pb-2">
+                    <h3 className="font-bold text-[#002f6c]">{title}</h3>
+                    {formula && <p className="text-xs text-gray-500 italic mt-1 font-normal leading-tight">{formula}</p>}
+                </div>
                 <div className="grid grid-cols-2 gap-3 mb-3">
                     {children}
                 </div>
@@ -77,20 +78,16 @@
             const [activeCategory, setActiveCategory] = useState("drogas");
 
             // --- Estados de las fórmulas ---
-            // Drogas
             const [propofol, setPropofol] = useState({ ml: "" });
             const [remifentanilo, setRemifentanilo] = useState({ ml: "", mg: "" });
             const [dobutamina, setDobutamina] = useState({ ml: "", mg: "" });
             const [norepinefrina, setNorepinefrina] = useState({ ml: "", mg: "" });
             const [dopamina, setDopamina] = useState({ ml: "" });
-            const [vasopresina, setVasopresina] = useState({});
             const [dexmedetomidina, setDexmedetomidina] = useState({ t: 24 });
             const [midazolam, setMidazolam] = useState({ dosis: "0.15" });
-            const [heparina, setHeparina] = useState({});
             const [fentanilo, setFentanilo] = useState({ t: "" });
             const [gammas, setGammas] = useState({ mg: "", ml: "", dilucion: "" });
 
-            // Ácido-Base
             const [acidosisMet, setAcidosisMet] = useState({ hco3: "" });
             const [alcalosisMet, setAlcalosisMet] = useState({ hco3: "" });
             const [acRespiratoriaAg, setAcRespiratoriaAg] = useState({ pco2: "" });
@@ -98,11 +95,9 @@
             const [alcRespiratoriaAg, setAlcRespiratoriaAg] = useState({ pco2: "" });
             const [alcRespiratoriaCro, setAlcRespiratoriaCro] = useState({ pco2: "" });
 
-            // Ventilación
             const [frRequerida, setFrRequerida] = useState({ frActual: "", pco2Tengo: "", pco2Quiero: "" });
             const [volRequerido, setVolRequerido] = useState({ pco2Medido: "", vtActual: "", pco2Esperado: "" });
 
-            // Otros
             const [calcio, setCalcio] = useState({ calcioMedido: "", albumina: "" });
             const [deficitAgua, setDeficitAgua] = useState({ sodioReal: "", sodioCalculado: "140" });
             const [balanceN, setBalanceN] = useState({ nIngerido: "", nExcretado: "" });
@@ -148,7 +143,6 @@
                     case 'gammas':
                         if (!gammas.mg || !gammas.ml || !gammas.dilucion || w === 0) return "-";
                         return ((parseFloat(gammas.mg) * parseFloat(gammas.ml) * 1000) / parseFloat(gammas.dilucion) / 60 / w).toFixed(2) + " gamma";
-                    
                     case 'acidosisMet':
                         if (!acidosisMet.hco3) return "-";
                         const resAM = 1.5 * parseFloat(acidosisMet.hco3) + 8;
@@ -169,7 +163,6 @@
                     case 'alcRespiratoriaCro':
                         if (!alcRespiratoriaCro.pco2) return "-";
                         return (24 - ((40 - parseFloat(alcRespiratoriaCro.pco2)) / 10) * 5).toFixed(2);
-                    
                     case 'frRequerida':
                         if (!frRequerida.frActual || !frRequerida.pco2Tengo || !frRequerida.pco2Quiero) return "-";
                         return ((parseFloat(frRequerida.frActual) * parseFloat(frRequerida.pco2Tengo)) / parseFloat(frRequerida.pco2Quiero)).toFixed(1);
@@ -190,7 +183,7 @@
                         return ((parseFloat(nExcretado.urea) * 0.46) + 2).toFixed(2);
                     case 'beriplex':
                         if (!beriplex.tpDeseado || !beriplex.tpPte || w === 0) return "-";
-                        return (((parseFloat(beriplex.tpDeseado) - parseFloat(beriplex.tpPte)) * w) / 100).toFixed(2) + " Sachets"; // usando 100 como promedio entre 70-120
+                        return (((parseFloat(beriplex.tpDeseado) - parseFloat(beriplex.tpPte)) * w) / 100).toFixed(2) + " Sachets";
                     default:
                         return "-";
                 }
@@ -244,53 +237,53 @@
                     {/* Content Area */}
                     <div className="p-4 flex-1 pb-20">
                         
-                        {}
+                        {/* CATEGORY: DROGAS */}
                         {activeCategory === 'drogas' && (
                             <div className="animate-fade-in">
-                                <Card title="Propofol" result={calculate('propofol')}>
+                                <Card title="Propofol" formula="(ml x 10 / Peso = mg/kg/hora)" result={calculate('propofol')}>
                                     <Input label="Volumen (ml)" value={propofol.ml} onChange={e => setPropofol({ ...propofol, ml: e.target.value })} />
                                 </Card>
 
-                                <Card title="Remifentanilo (Vel. infusión)" result={calculate('remifentanilo')}>
+                                <Card title="Remifentanilo (Vel. infusión)" formula="(ml x mg x 1000 / 110 / 60 / Peso)" result={calculate('remifentanilo')}>
                                     <Input label="Volumen (ml)" value={remifentanilo.ml} onChange={e => setRemifentanilo({ ...remifentanilo, ml: e.target.value })} />
                                     <Input label="Dosis (mg)" value={remifentanilo.mg} onChange={e => setRemifentanilo({ ...remifentanilo, mg: e.target.value })} />
                                 </Card>
 
-                                <Card title="Dobutamina" result={calculate('dobutamina')}>
+                                <Card title="Dobutamina" formula="(ml x mg x 1000 / 250 / 60 / Peso)" result={calculate('dobutamina')}>
                                     <Input label="Volumen (ml)" value={dobutamina.ml} onChange={e => setDobutamina({ ...dobutamina, ml: e.target.value })} />
                                     <Input label="Dosis (mg)" value={dobutamina.mg} onChange={e => setDobutamina({ ...dobutamina, mg: e.target.value })} />
                                 </Card>
 
-                                <Card title="Norepinefrina" result={calculate('norepinefrina')}>
+                                <Card title="Norepinefrina" formula="(ml x mg x 1000 / 250 / 60 / Peso)" result={calculate('norepinefrina')}>
                                     <Input label="Volumen (ml)" value={norepinefrina.ml} onChange={e => setNorepinefrina({ ...norepinefrina, ml: e.target.value })} />
                                     <Input label="Dosis (mg)" value={norepinefrina.mg} onChange={e => setNorepinefrina({ ...norepinefrina, mg: e.target.value })} />
                                 </Card>
 
-                                <Card title="Dopamina (DOPA)" result={calculate('dopamina')}>
+                                <Card title="Dopamina (DOPA)" formula="(200 x ml x 1000 / 250 / Peso / 60)" result={calculate('dopamina')}>
                                     <Input label="Volumen (ml)" value={dopamina.ml} onChange={e => setDopamina({ ...dopamina, ml: e.target.value })} />
                                 </Card>
 
-                                <Card title="Vasopresina" result={calculate('vasopresina')}>
-                                    <div className="col-span-2 text-xs text-gray-500 italic flex items-center h-full">Usa el Peso Global automáticamente.</div>
+                                <Card title="Vasopresina" formula="(0,06 x Peso x 24 / 20 = ml/hora)" result={calculate('vasopresina')}>
+                                    <div className="col-span-2 text-xs text-gray-500 flex items-center h-full">Usa el Peso Global automáticamente.</div>
                                 </Card>
 
-                                <Card title="Dexmedetomidina" result={calculate('dexmedetomidina')}>
+                                <Card title="Dexmedetomidina" formula="(0,7 x Tiempo x Peso / 200 = N° ampollas)" result={calculate('dexmedetomidina')}>
                                     <Input label="Tiempo (horas)" value={dexmedetomidina.t} onChange={e => setDexmedetomidina({ ...dexmedetomidina, t: e.target.value })} placeholder="Ej: 24" />
                                 </Card>
 
-                                <Card title="Midazolam" result={calculate('midazolam')}>
+                                <Card title="Midazolam" formula="(Dosis x Peso x 24 / 21 = N° Ampollas)" result={calculate('midazolam')}>
                                     <Input label="Dosis (mg/kg/h)" value={midazolam.dosis} onChange={e => setMidazolam({ ...midazolam, dosis: e.target.value })} placeholder="Ej: 0.15" />
                                 </Card>
 
-                                <Card title="Heparina" result={calculate('heparina')}>
-                                    <div className="col-span-2 text-xs text-gray-500 italic flex items-center h-full">Usa el Peso Global automáticamente.</div>
+                                <Card title="Heparina" formula="(21 x 11 x 24 x Peso / 25.000)" result={calculate('heparina')}>
+                                    <div className="col-span-2 text-xs text-gray-500 flex items-center h-full">Usa el Peso Global automáticamente.</div>
                                 </Card>
 
-                                <Card title="Fentanilo" result={calculate('fentanilo')}>
+                                <Card title="Fentanilo" formula="(2 x Tiempo en hora x 100 / 250)" result={calculate('fentanilo')}>
                                     <Input label="Tiempo (horas)" value={fentanilo.t} onChange={e => setFentanilo({ ...fentanilo, t: e.target.value })} />
                                 </Card>
 
-                                <Card title="Cálculo de gammas" result={calculate('gammas')}>
+                                <Card title="Cálculo de gammas" formula="(Mg x ml x 1000 / dilución / 60 / Peso)" result={calculate('gammas')}>
                                     <Input label="Mg" value={gammas.mg} onChange={e => setGammas({ ...gammas, mg: e.target.value })} />
                                     <Input label="Volumen (ml)" value={gammas.ml} onChange={e => setGammas({ ...gammas, ml: e.target.value })} />
                                     <Input label="Dilución" value={gammas.dilucion} onChange={e => setGammas({ ...gammas, dilucion: e.target.value })} />
@@ -298,39 +291,39 @@
                             </div>
                         )}
 
-                        {}
+                        {/* CATEGORY: ÁCIDO-BASE */}
                         {activeCategory === 'acidobase' && (
                             <div className="animate-fade-in">
-                                <Card title="Acidosis Metabólica" result={calculate('acidosisMet')}>
+                                <Card title="Acidosis Metabólica" formula="(1,5 x HCO3 + 8 ±2)" result={calculate('acidosisMet')}>
                                     <Input label="HCO3 medido" value={acidosisMet.hco3} onChange={e => setAcidosisMet({ ...acidosisMet, hco3: e.target.value })} />
                                 </Card>
-                                <Card title="Alcalosis Metabólica" result={calculate('alcalosisMet')}>
+                                <Card title="Alcalosis Metabólica" formula="(0,7 x HCO3 + 20 ±2)" result={calculate('alcalosisMet')}>
                                     <Input label="HCO3 medido" value={alcalosisMet.hco3} onChange={e => setAlcalosisMet({ ...alcalosisMet, hco3: e.target.value })} />
                                 </Card>
-                                <Card title="Acidosis Respiratoria Aguda" result={calculate('acRespiratoriaAg')}>
+                                <Card title="Acidosis Respiratoria Aguda" formula="(24 + (pCO2 - 40)) / 10" result={calculate('acRespiratoriaAg')}>
                                     <Input label="pCO2 medido" value={acRespiratoriaAg.pco2} onChange={e => setAcRespiratoriaAg({ ...acRespiratoriaAg, pco2: e.target.value })} />
                                 </Card>
-                                <Card title="Acidosis Respiratoria Crónica" result={calculate('acRespiratoriaCro')}>
+                                <Card title="Acidosis Respiratoria Crónica" formula="(24 + (pCO2 - 40) x 4) / 10" result={calculate('acRespiratoriaCro')}>
                                     <Input label="pCO2 medido" value={acRespiratoriaCro.pco2} onChange={e => setAcRespiratoriaCro({ ...acRespiratoriaCro, pco2: e.target.value })} />
                                 </Card>
-                                <Card title="Alcalosis Respiratoria Aguda" result={calculate('alcRespiratoriaAg')}>
+                                <Card title="Alcalosis Respiratoria Aguda" formula="24 - ((40 - pCO2) / 10) x 2" result={calculate('alcRespiratoriaAg')}>
                                     <Input label="pCO2 medido" value={alcRespiratoriaAg.pco2} onChange={e => setAlcRespiratoriaAg({ ...alcRespiratoriaAg, pco2: e.target.value })} />
                                 </Card>
-                                <Card title="Alcalosis Respiratoria Crónica" result={calculate('alcRespiratoriaCro')}>
+                                <Card title="Alcalosis Respiratoria Crónica" formula="24 - ((40 - pCO2) / 10) x 5" result={calculate('alcRespiratoriaCro')}>
                                     <Input label="pCO2 medido" value={alcRespiratoriaCro.pco2} onChange={e => setAlcRespiratoriaCro({ ...alcRespiratoriaCro, pco2: e.target.value })} />
                                 </Card>
                             </div>
                         )}
 
-                        {}
+                        {/* CATEGORY: VENTILACIÓN MECÁNICA */}
                         {activeCategory === 'ventilacion' && (
                             <div className="animate-fade-in">
-                                <Card title="Frecuencia Respiratoria Requerida" result={calculate('frRequerida')}>
+                                <Card title="Frecuencia Respiratoria Requerida" formula="(FR actual x pCO2 que tengo) / pCO2 que quiero" result={calculate('frRequerida')}>
                                     <Input label="FR Actual" value={frRequerida.frActual} onChange={e => setFrRequerida({ ...frRequerida, frActual: e.target.value })} />
                                     <Input label="pCO2 que tengo" value={frRequerida.pco2Tengo} onChange={e => setFrRequerida({ ...frRequerida, pco2Tengo: e.target.value })} />
                                     <Input label="pCO2 que quiero" value={frRequerida.pco2Quiero} onChange={e => setFrRequerida({ ...frRequerida, pco2Quiero: e.target.value })} />
                                 </Card>
-                                <Card title="Volumen Requerido" result={calculate('volRequerido')}>
+                                <Card title="Volumen Requerido" formula="(pCO2 medido x Vt actual) / pCO2 Esperado" result={calculate('volRequerido')}>
                                     <Input label="pCO2 Medido" value={volRequerido.pco2Medido} onChange={e => setVolRequerido({ ...volRequerido, pco2Medido: e.target.value })} />
                                     <Input label="Vt Actual" value={volRequerido.vtActual} onChange={e => setVolRequerido({ ...volRequerido, vtActual: e.target.value })} />
                                     <Input label="pCO2 Esperado" value={volRequerido.pco2Esperado} onChange={e => setVolRequerido({ ...volRequerido, pco2Esperado: e.target.value })} />
@@ -338,27 +331,27 @@
                             </div>
                         )}
 
-                        {}
+                        {/* CATEGORY: OTROS */}
                         {activeCategory === 'otros' && (
                             <div className="animate-fade-in">
-                                <Card title="Calcio corregido con albúmina" result={calculate('calcio')}>
-                                    <Input label="Calcio medido (mg/dl)" value={calcio.calcioMedido} onChange={e => setCalcio({ ...calcio, calcioMedido: e.target.value })} />
+                                <Card title="Calcio corregido con albúmina" formula="Calcio medido - (0,8 x (4 - Albúmina))" result={calculate('calcio')}>
+                                    <Input label="Calcio medido" value={calcio.calcioMedido} onChange={e => setCalcio({ ...calcio, calcioMedido: e.target.value })} />
                                     <Input label="Albúmina" value={calcio.albumina} onChange={e => setCalcio({ ...calcio, albumina: e.target.value })} />
                                 </Card>
-                                <Card title="Déficit de Agua" result={calculate('deficitAgua')}>
+                                <Card title="Déficit de Agua" formula="0,6 x Peso x ((Na Real / Na Calculado) - 1)" result={calculate('deficitAgua')}>
                                     <Input label="Na Real" value={deficitAgua.sodioReal} onChange={e => setDeficitAgua({ ...deficitAgua, sodioReal: e.target.value })} />
                                     <Input label="Na Calculado" value={deficitAgua.sodioCalculado} onChange={e => setDeficitAgua({ ...deficitAgua, sodioCalculado: e.target.value })} placeholder="140" />
                                 </Card>
-                                <Card title="Balance Nitrogenado" result={calculate('balanceN')}>
+                                <Card title="Balance Nitrogenado" formula="(N ingerido / 6,25) - N excretado" result={calculate('balanceN')}>
                                     <Input label="N Ingerido (g/día)" value={balanceN.nIngerido} onChange={e => setBalanceN({ ...balanceN, nIngerido: e.target.value })} />
                                     <Input label="N Excretado" value={balanceN.nExcretado} onChange={e => setBalanceN({ ...balanceN, nExcretado: e.target.value })} />
                                 </Card>
-                                <Card title="Nitrógeno excretado" result={calculate('nExcretado')}>
+                                <Card title="Nitrógeno excretado" formula="(Urea x 0,46) + 2" result={calculate('nExcretado')}>
                                     <Input label="Urea (g/l)" value={nExcretado.urea} onChange={e => setNExcretado({ ...nExcretado, urea: e.target.value })} />
                                 </Card>
-                                <Card title="Cálculo de Beriplex" result={calculate('beriplex')}>
+                                <Card title="Cálculo de Beriplex" formula="(TP deseado - TP del pte) x Peso / (70-120)" result={calculate('beriplex')}>
                                     <Input label="TP Deseado" value={beriplex.tpDeseado} onChange={e => setBeriplex({ ...beriplex, tpDeseado: e.target.value })} />
-                                    <Input label="TP del Paciente" value={beriplex.tpPte} onChange={e => setBeriplex({ ...beriplex, tpPte: e.target.value })} />
+                                    <Input label="TP Paciente" value={beriplex.tpPte} onChange={e => setBeriplex({ ...beriplex, tpPte: e.target.value })} />
                                 </Card>
                             </div>
                         )}
